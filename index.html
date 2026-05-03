@@ -1,0 +1,610 @@
+
+html_content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeChat Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background-color: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .wechat-container {
+            width: 900px;
+            height: 600px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Left Sidebar */
+        .sidebar {
+            width: 280px;
+            background-color: #2e2e2e;
+            display: flex;
+            flex-direction: column;
+            color: #fff;
+        }
+
+        .user-info {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #07c160;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .user-id {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .search-box {
+            padding: 12px 16px;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: #3a3a3a;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: #888;
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .chat-item {
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-bottom: 1px solid #3a3a3a;
+        }
+
+        .chat-item:hover {
+            background-color: #3a3a3a;
+        }
+
+        .chat-item.active {
+            background-color: #3a3a3a;
+        }
+
+        .chat-item.hidden {
+            display: none;
+        }
+
+        .chat-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: #07c160;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+
+        .chat-avatar:hover {
+            transform: scale(1.1);
+        }
+
+        .chat-info {
+            flex: 1;
+        }
+
+        .chat-name {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .chat-preview {
+            font-size: 12px;
+            color: #888;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Right Chat Area */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f5f5f5;
+        }
+
+        .chat-header {
+            padding: 16px 20px;
+            background-color: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-header h2 {
+            font-size: 18px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            max-width: 80%;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message.received {
+            align-self: flex-start;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #07c160;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .message.sent .message-avatar {
+            background-color: #07c160;
+        }
+
+        .message.received .message-avatar {
+            background-color: #ff6b6b;
+        }
+
+        .message-content {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .message.sent .message-content {
+            background-color: #95ec69;
+            color: #333;
+        }
+
+        .message.received .message-content {
+            background-color: #fff;
+            color: #333;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .chat-input-area {
+            padding: 12px 20px;
+            background-color: #f5f5f5;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+            background-color: #fff;
+        }
+
+        .chat-input:focus {
+            border-color: #07c160;
+        }
+
+        .send-btn {
+            padding: 10px 24px;
+            background-color: #07c160;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .send-btn:hover {
+            background-color: #06ad56;
+        }
+
+        .send-btn:active {
+            background-color: #059a4c;
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            padding: 40px 20px;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            padding: 10px 14px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            align-self: flex-start;
+            margin-left: 46px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background-color: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="wechat-container">
+        <!-- Left Sidebar -->
+        <div class="sidebar">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar" onclick="changeEmoji('user')">😊</div>
+                <div class="user-details">
+                    <div class="user-name">My WeChat</div>
+                    <div class="user-id">ID: me123</div>
+                </div>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search contacts..." oninput="searchContacts()">
+            </div>
+            <div class="chat-list" id="chatList">
+                <div class="chat-item active" data-contact="Xiaoming" onclick="openChat('Xiaoming')">
+                    <div class="chat-avatar" id="avatar-Xiaoming" onclick="event.stopPropagation(); changeEmoji('Xiaoming')">👦</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Xiaoming</div>
+                        <div class="chat-preview" id="preview-Xiaoming">Welcome to chat!</div>
+                    </div>
+                </div>
+                <div class="chat-item" data-contact="Xiaohong" onclick="openChat('Xiaohong')">
+                    <div class="chat-avatar" id="avatar-Xiaohong" onclick="event.stopPropagation(); changeEmoji('Xiaohong')">👧</div>
+                    <div class="chat-info">
+                        <div class="chat-name">Xiaohong</div>
+                        <div class="chat-preview" id="preview-Xiaohong">Welcome to chat!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Chat Area -->
+        <div class="chat-area">
+            <div class="chat-header">
+                <h2 id="chatTitle">Xiaoming</h2>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="welcome-message" id="welcomeMsg">
+                    Welcome to WeChat! Click on a contact to start chatting.
+                </div>
+            </div>
+            <div class="typing-indicator" id="typingIndicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="messageInput" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+                <button class="send-btn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentContact = 'Xiaoming';
+        let currentUserEmoji = '😊';
+        let contactEmojis = {
+            'Xiaoming': '👦',
+            'Xiaohong': '👧'
+        };
+        
+        const chatHistory = {
+            'Xiaoming': [],
+            'Xiaohong': []
+        };
+
+        const aiResponses = {
+            'hello': 'Hello! Nice to meet you! 👋',
+            'hi': 'Hi there! How are you doing?',
+            'how are you': 'I\'m doing great, thanks for asking! How about you?',
+            'what is your name': 'My name is {name}! Nice to meet you!',
+            'name': 'You can call me {name}!',
+            'weather': 'The weather is nice today! Perfect for a chat! ☀️',
+            'time': `It's currently ${new Date().toLocaleTimeString()}. Time flies when we're chatting!`,
+            'help': 'I can chat with you! Try saying hello, asking about the weather, or just tell me how your day is going!',
+            'bye': 'Goodbye! It was nice chatting with you! 👋',
+            'goodbye': 'See you later! Take care!',
+            'thank': 'You\'re very welcome! 😊',
+            'thanks': 'No problem at all! Happy to help!',
+            'love': 'That\'s so sweet! 💕',
+            'like': 'I like that too! Great minds think alike!',
+            'hate': 'Oh no, that\'s too bad. Want to talk about it?',
+            'sad': 'I\'m sorry to hear that. Sending you virtual hugs! 🤗',
+            'happy': 'That\'s wonderful! I\'m happy for you! 🎉',
+            'joke': 'Why don\'t scientists trust atoms? Because they make up everything! 😄',
+            'food': 'I love food too! What\'s your favorite? 🍜',
+            'music': 'Music is amazing! What do you like to listen to? 🎵',
+            'movie': 'Movies are great! Any recommendations? 🎬',
+            'book': 'Reading is wonderful! What\'s your favorite book? 📚',
+            'game': 'Games are fun! What do you like to play? 🎮',
+            'work': 'Work can be tough. Remember to take breaks! 💪',
+            'study': 'Studying is important! You\'re doing great! 📖',
+            'sleep': 'Sleep is important! Make sure you get enough rest! 😴',
+            'dream': 'Dreams are fascinating! Do you remember your dreams?',
+            'default': 'That\'s interesting! Tell me more about that.'
+        };
+
+        const emojis = ['😊', '😎', '🤓', '🥳', '😴', '🤔', '😂', '🥰', '😇', '🤠', '👽', '🤖', '👻', '👦', '👧', '👨', '👩', '🧑', '👴', '👵', '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🐤', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷', '🕸', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐈‍⬛', '🐓', '🦃', '🦚', '🦜', '🦢', '🦩', '🕊', '🐇', '🦝', '🦨', '🦡', '🦦', '🦥', '🐁', '🐀', '🐿', '🦔'];
+
+        function openChat(contact) {
+            currentContact = contact;
+            document.getElementById('chatTitle').textContent = contact;
+            
+            // Update active state
+            document.querySelectorAll('.chat-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-contact="${contact}"]`).classList.add('active');
+            
+            // Load chat history
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.innerHTML = '';
+            
+            if (chatHistory[contact].length === 0) {
+                const welcomeDiv = document.createElement('div');
+                welcomeDiv.className = 'welcome-message';
+                welcomeDiv.textContent = `Welcome to chat with ${contact}! Send a message to start the conversation.`;
+                messagesContainer.appendChild(welcomeDiv);
+            } else {
+                chatHistory[contact].forEach(msg => {
+                    addMessageToUI(msg.text, msg.type, msg.time, false);
+                });
+            }
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function addMessageToUI(text, type, time, isNew = true) {
+            const messagesContainer = document.getElementById('chatMessages');
+            
+            if (isNew && messagesContainer.querySelector('.welcome-message')) {
+                messagesContainer.innerHTML = '';
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'message-avatar';
+            avatarDiv.textContent = type === 'sent' ? currentUserEmoji : contactEmojis[currentContact];
+            
+            const contentDiv = document.createElement('div');
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-content';
+            textDiv.textContent = text;
+            
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = time;
+            
+            contentDiv.appendChild(textDiv);
+            contentDiv.appendChild(timeDiv);
+            messageDiv.appendChild(avatarDiv);
+            messageDiv.appendChild(contentDiv);
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const text = input.value.trim();
+            
+            if (!text) return;
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            // Add user message
+            chatHistory[currentContact].push({ text, type: 'sent', time });
+            addMessageToUI(text, 'sent', time);
+            
+            // Update preview
+            document.getElementById(`preview-${currentContact}`).textContent = text;
+            
+            input.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Generate AI response after delay
+            setTimeout(() => {
+                hideTypingIndicator();
+                const response = generateAIResponse(text);
+                const responseTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                chatHistory[currentContact].push({ text: response, type: 'received', time: responseTime });
+                addMessageToUI(response, 'received', responseTime);
+                document.getElementById(`preview-${currentContact}`).textContent = response;
+            }, 1500 + Math.random() * 1000);
+        }
+
+        function generateAIResponse(userText) {
+            const lowerText = userText.toLowerCase();
+            
+            for (const [keyword, response] of Object.entries(aiResponses)) {
+                if (lowerText.includes(keyword)) {
+                    return response.replace(/{name}/g, currentContact);
+                }
+            }
+            
+            return aiResponses['default'];
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'flex';
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function changeEmoji(type) {
+            const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+            
+            if (type === 'user') {
+                currentUserEmoji = randomEmoji;
+                document.getElementById('userAvatar').textContent = randomEmoji;
+                
+                // Update all sent messages
+                document.querySelectorAll('.message.sent .message-avatar').forEach(avatar => {
+                    avatar.textContent = randomEmoji;
+                });
+            } else {
+                contactEmojis[type] = randomEmoji;
+                document.getElementById(`avatar-${type}`).textContent = randomEmoji;
+                
+                // Update received messages if this contact is currently open
+                if (currentContact === type) {
+                    document.querySelectorAll('.message.received .message-avatar').forEach(avatar => {
+                        avatar.textContent = randomEmoji;
+                    });
+                }
+            }
+        }
+
+        function searchContacts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const chatItems = document.querySelectorAll('.chat-item');
+            
+            chatItems.forEach(item => {
+                const contactName = item.getAttribute('data-contact').toLowerCase();
+                if (contactName.includes(searchTerm)) {
+                    item.classList.remove('hidden');
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+        }
+
+        // Initialize with Xiaoming's chat
+        openChat('Xiaoming');
+    </script>
+</body>
+</html>"""
+
+with open('/mnt/agents/output/wechat_simulator.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print("WeChat simulator HTML file created successfully!")
+print(f"File size: {len(html_content)} characters")
